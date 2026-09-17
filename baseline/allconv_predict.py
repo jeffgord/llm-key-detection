@@ -22,12 +22,16 @@ def predict_key(audio_path: Path) -> str:
     return madmom.features.key.key_prediction_to_label(predictions)
 
 
-def load_completed(output_path: Path) -> set[int]:
+def track_id_from_stem(stem: str) -> str:
+    return str(int(stem)) if stem.isdigit() else stem
+
+
+def load_completed(output_path: Path) -> set[str]:
     if not output_path.exists():
         return set()
     with open(output_path, newline="") as f:
         reader = csv.DictReader(f)
-        return {int(row["track_id"]) for row in reader}
+        return {row["track_id"] for row in reader}
 
 
 if __name__ == "__main__":
@@ -37,12 +41,12 @@ if __name__ == "__main__":
     parser.add_argument("--num-workers", type=int, default=1, help="Number of worker threads (1 = no parallelism)")
     args = parser.parse_args()
 
-    files = sorted(args.data_dir.rglob("*.mp3"))
+    files = sorted(args.data_dir.rglob("*.mp3")) + sorted(args.data_dir.rglob("*.wav"))
     if not files:
-        raise SystemExit(f"No .mp3 files found under {args.data_dir}")
+        raise SystemExit(f"No .mp3 or .wav files found under {args.data_dir}")
 
     completed = load_completed(args.output)
-    pending = [p for p in files if int(p.stem) not in completed]
+    pending = [p for p in files if track_id_from_stem(p.stem) not in completed]
 
     print(f"Total: {len(files)} files — {len(completed)} already done, {len(pending)} remaining")
 
@@ -50,7 +54,7 @@ if __name__ == "__main__":
     csv_lock = threading.Lock()
 
     def process_file(audio_path: Path) -> None:
-        track_id = int(audio_path.stem)
+        track_id = track_id_from_stem(audio_path.stem)
         try:
             key = predict_key(audio_path)
         except Exception as e:
