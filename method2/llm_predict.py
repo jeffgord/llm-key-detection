@@ -58,12 +58,12 @@ def parse_response(text: str) -> dict:
     return json.loads(text)
 
 
-def load_completed(output_path: Path) -> set[int]:
+def load_completed(output_path: Path) -> set[str]:
     if not output_path.exists():
         return set()
     with open(output_path, newline='') as f:
         reader = csv.DictReader(f)
-        return {int(row['track_id']) for row in reader}
+        return {row['track_id'] for row in reader}
 
 
 def main():
@@ -77,10 +77,10 @@ def main():
         chords_rows = list(csv.DictReader(f))
 
     with open(args.chroma_csv, newline='') as f:
-        chroma_by_id = {int(row['track_id']): row['chroma_activations'] for row in csv.DictReader(f)}
+        chroma_by_id = {row['track_id']: row['chroma_activations'] for row in csv.DictReader(f)}
 
     completed = load_completed(args.output)
-    pending = [r for r in chords_rows if int(r['track_id']) not in completed]
+    pending = [r for r in chords_rows if r['track_id'] not in completed]
 
     print(f"Total: {len(chords_rows)} tracks — {len(completed)} already done, {len(pending)} remaining")
 
@@ -95,7 +95,7 @@ def main():
     from tqdm import tqdm
     with tqdm(pending, desc="Predicting keys", unit="track") as pbar:
         for row in pbar:
-            track_id = int(row['track_id'])
+            track_id = row['track_id']
             chords = row['chords']
             chroma = chroma_by_id[track_id]
 

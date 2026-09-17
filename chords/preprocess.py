@@ -1,5 +1,5 @@
+import argparse
 import csv
-import os
 from pathlib import Path
 
 RAW_DIR = Path(__file__).parent / "raw"
@@ -42,10 +42,15 @@ def format_chords(segments: list[tuple[float, float, str]]) -> str:
 
 
 def main():
-    OUTPUT_FILE.parent.mkdir(parents=True, exist_ok=True)
-    lab_files = sorted(RAW_DIR.glob("*.lab"), key=lambda p: int(p.stem))
+    parser = argparse.ArgumentParser(description="Collapse raw .lab chord output into a compact per-track CSV")
+    parser.add_argument("--raw-dir", type=Path, default=RAW_DIR, help="Directory of .lab files")
+    parser.add_argument("--output", type=Path, default=OUTPUT_FILE, help="Output CSV path")
+    args = parser.parse_args()
 
-    with open(OUTPUT_FILE, "w", newline="") as csvfile:
+    args.output.parent.mkdir(parents=True, exist_ok=True)
+    lab_files = sorted(args.raw_dir.glob("*.lab"), key=lambda p: p.stem)
+
+    with open(args.output, "w", newline="") as csvfile:
         writer = csv.writer(csvfile)
         writer.writerow(["track_id", "chords"])
         for lab_path in lab_files:
@@ -55,7 +60,7 @@ def main():
             chords_str = format_chords(segments)
             writer.writerow([track_id, chords_str])
 
-    print(f"Wrote {len(lab_files)} tracks to {OUTPUT_FILE}")
+    print(f"Wrote {len(lab_files)} tracks to {args.output}")
 
 
 if __name__ == "__main__":

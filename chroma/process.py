@@ -17,7 +17,7 @@ if __name__ == "__main__":
     parser.add_argument("--output", type=Path, default=Path("chroma/chroma.csv"), help="Output CSV path")
     args = parser.parse_args()
 
-    files = sorted(args.raw_dir.glob("*.npy"), key=lambda p: int(p.stem))
+    files = sorted(args.raw_dir.glob("*.npy"), key=lambda p: p.stem)
     if not files:
         raise SystemExit(f"No .npy files found under {args.raw_dir}")
 
@@ -27,7 +27,7 @@ if __name__ == "__main__":
         writer = csv.writer(f)
         writer.writerow(["track_id", "chroma_activations"])
         for path in files:
-            track_id = int(path.stem)
+            track_id = path.stem
             vec = np.load(path)
             writer.writerow([track_id, format_chroma(vec)])
 

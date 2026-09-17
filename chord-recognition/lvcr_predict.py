@@ -34,13 +34,17 @@ def get_nets_and_hmm():
     return _thread_local.nets, _thread_local.hmm
 
 
-def load_completed(output_dir: Path) -> set[int]:
-    return {int(p.stem) for p in output_dir.glob('*.lab')}
+def track_id_from_stem(stem: str) -> str:
+    return str(int(stem)) if stem.isdigit() else stem
+
+
+def load_completed(output_dir: Path) -> set[str]:
+    return {p.stem for p in output_dir.glob('*.lab')}
 
 
 def process_file(audio_path: Path, output_dir: Path) -> None:
     nets, hmm = get_nets_and_hmm()
-    lab_path = output_dir / f'{int(audio_path.stem)}.lab'
+    lab_path = output_dir / f'{track_id_from_stem(audio_path.stem)}.lab'
 
     entry = DataEntry()
     entry.prop.set('sr', DEFAULT_SR)
@@ -65,12 +69,12 @@ if __name__ == '__main__':
 
     args.output_dir.mkdir(parents=True, exist_ok=True)
 
-    files = sorted(args.data_dir.rglob('*.mp3'))
+    files = sorted(args.data_dir.rglob('*.mp3')) + sorted(args.data_dir.rglob('*.wav'))
     if not files:
-        raise SystemExit(f'No .mp3 files found under {args.data_dir}')
+        raise SystemExit(f'No .mp3 or .wav files found under {args.data_dir}')
 
     completed = load_completed(args.output_dir)
-    pending = [p for p in files if int(p.stem) not in completed]
+    pending = [p for p in files if track_id_from_stem(p.stem) not in completed]
     print(f'Total: {len(files)} files — {len(completed)} already done, {len(pending)} remaining')
 
     def task(audio_path):
